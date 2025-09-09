@@ -1,0 +1,17 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+  build:
+    commands:
+      - echo "Running Trend Micro Cloud One Conformity Template Scanner"
+      - pip install -r https://raw.githubusercontent.com/fernandostc/Cloud-Conformity-Pipeline-Scanner/master/requirements.txt
+      - wget https://raw.githubusercontent.com/fernandostc/Cloud-Conformity-Pipeline-Scanner/master/src/scanner.py
+      - python3 scanner.py &> output.json
+
+artifacts:
+  files:
+    - output.json
+ 
