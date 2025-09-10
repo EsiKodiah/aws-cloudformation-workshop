@@ -3,13 +3,20 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      python: 3.8
+      python: 3.7
+  pre_build:
+    commands:
+      - pip3 install awscli --upgrade --user
   build:
     commands:
-      - echo "Running Trend Micro Cloud One Conformity Template Scanner"
-      - pip install -r https://raw.githubusercontent.com/fernandostc/Cloud-Conformity-Pipeline-Scanner/master/requirements.txt
+      - echo "Installing Conformity Scanner dependencies..."
+      - pip3 install -r https://raw.githubusercontent.com/fernandostc/Cloud-Conformity-Pipeline-Scanner/master/requirements.txt
       - wget https://raw.githubusercontent.com/fernandostc/Cloud-Conformity-Pipeline-Scanner/master/src/scanner.py
-      - python3 scanner.py &> output.json
+      - echo "Running scanner with API key and region"
+      - python3 scanner.py --api-key $CC_API_KEY --region $CC_REGION --output output.json || true
+      - echo "==== SCAN OUTPUT START ===="
+      - cat output.json || echo "No output.json created"
+      - echo "==== SCAN OUTPUT END ===="
 
 artifacts:
   files:

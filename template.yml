@@ -53,7 +53,7 @@ Resources:
         - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
- 
+
   ConformityCodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -69,12 +69,13 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
         - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
 
-    ConformityCodeBuild:
+  ConformityCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: ConformityTemplateScanner
       Source:
         Type: CODEPIPELINE
+        BuildSpec: buildspec.yml   # 👈 tells CodeBuild to use repo’s buildspec.yml
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -93,7 +94,6 @@ Resources:
       ServiceRole: !GetAtt ConformityCodeBuildRole.Arn
       TimeoutInMinutes: 10
       Description: Runs Trend Micro Cloud One Conformity template scanner
- 
 
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -152,4 +152,4 @@ Outputs:
     Value: !Ref Pipeline
   ArtifactsBucket:
     Value: !Ref PipelineArtifactsBucket
-  
+ 
