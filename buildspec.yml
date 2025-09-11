@@ -6,19 +6,13 @@ phases:
       python: 3.7
   pre_build:
     commands:
-      - pip3 install awscli --upgrade --user
+      - pip install cfn-lint
   build:
     commands:
-      - echo "Installing Conformity Scanner dependencies..."
-      - pip3 install -r https://raw.githubusercontent.com/fernandostc/Cloud-Conformity-Pipeline-Scanner/master/requirements.txt
-      - wget https://raw.githubusercontent.com/fernandostc/Cloud-Conformity-Pipeline-Scanner/master/src/scanner.py
-      - echo "Running scanner with API key and region"
-      - python3 scanner.py --api-key $CC_API_KEY --region $CC_REGION --output output.json || true
-      - echo "==== SCAN OUTPUT START ===="
-      - cat output.json || echo "No output.json created"
-      - echo "==== SCAN OUTPUT END ===="
-
+      - echo "Running cfn-lint on template.yml"
+      - cfn-lint template.yml
 artifacts:
   files:
-    - output.json
+    - "**/*"
+ 
  

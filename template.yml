@@ -1,155 +1,31 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: >
-  CI/CD pipeline using GitHub, CodeBuild, CodePipeline, and Cloud One Conformity Scanner
-
-Parameters:
-  GitHubOwner:
-    Type: String
-    Description: Your GitHub username or org (e.g., your-github-user)
-  GitHubRepo:
-    Type: String
-    Description: The GitHub repo containing your CloudFormation templates
-  GitHubBranch:
-    Type: String
-    Default: main
-    Description: Branch to use from the GitHub repo
-  GitHubTokenSecret:
-    Type: String
-    Description: Name of the Secrets Manager secret storing your GitHub token (key should be `token`)
-  CloudOneConformityApiKey:
-    Type: String
-    Description: Cloud One Conformity API Key
-    NoEcho: true
-  CloudOneRegion:
-    Type: String
-    Default: us-west-2
-    AllowedValues: [us-west-2, us-east-1, ap-southeast-2, eu-west-1]
-    Description: Cloud One Conformity region
+Description: Insecure CloudFormation template for testing security scanners
 
 Resources:
-  PipelineArtifactsBucket:
+  InsecureEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0b09ffb6d8b58ca91
+      InstanceType: t2.micro
+      KeyName: my-insecure-key
+      SecurityGroups:
+        - !Ref InsecureSecurityGroup
+
+  InsecureSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow all inbound traffic
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  InsecureBucket:
     Type: AWS::S3::Bucket
     Properties:
-      VersioningConfiguration:
-        Status: Enabled
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
+      BucketName: insecure-bucket-example
+      AccessControl: PublicRead
+ 
 
-  PipelineRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codepipeline.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess
-        - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
-
-  ConformityCodeBuildRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codebuild.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
-        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
-
-  ConformityCodeBuild:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: ConformityTemplateScanner
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: buildspec.yml   # 👈 tells CodeBuild to use repo’s buildspec.yml
-      Artifacts:
-        Type: CODEPIPELINE
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
-        Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: CC_API_KEY
-            Value: !Ref CloudOneConformityApiKey
-          - Name: CC_REGION
-            Value: !Ref CloudOneRegion
-          - Name: CC_RISK_LEVEL
-            Value: HIGH
-          - Name: FAIL_PIPELINE
-            Value: enabled
-      ServiceRole: !GetAtt ConformityCodeBuildRole.Arn
-      TimeoutInMinutes: 10
-      Description: Runs Trend Micro Cloud One Conformity template scanner
-
-  Pipeline:
-    Type: AWS::CodePipeline::Pipeline
-    Properties:
-      RoleArn: !GetAtt PipelineRole.Arn
-      ArtifactStore:
-        Type: S3
-        Location: !Ref PipelineArtifactsBucket
-      Stages:
-        - Name: Source
-          Actions:
-            - Name: GitHubSource
-              ActionTypeId:
-                Category: Source
-                Owner: ThirdParty
-                Provider: GitHub
-                Version: "1"
-              Configuration:
-                Owner: !Ref GitHubOwner
-                Repo: !Ref GitHubRepo
-                Branch: !Ref GitHubBranch
-                OAuthToken: !Sub "{{resolve:secretsmanager:${GitHubTokenSecret}:SecretString:token}}"
-              OutputArtifacts:
-                - Name: SourceOutput
-        - Name: Scan
-          Actions:
-            - Name: ConformityScan
-              ActionTypeId:
-                Category: Test
-                Owner: AWS
-                Provider: CodeBuild
-                Version: "1"
-              Configuration:
-                ProjectName: !Ref ConformityCodeBuild
-              InputArtifacts:
-                - Name: SourceOutput
-              OutputArtifacts:
-                - Name: ScanOutput
-        - Name: Deploy
-          Actions:
-            - Name: DeployCFN
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: CloudFormation
-                Version: "1"
-              Configuration:
-                ActionMode: CREATE_UPDATE
-                StackName: pipeline-deployed-stack
-                TemplatePath: SourceOutput::cloudformation.yml
-              InputArtifacts:
-                - Name: SourceOutput
-
-Outputs:
-  PipelineName:
-    Value: !Ref Pipeline
-  ArtifactsBucket:
-    Value: !Ref PipelineArtifactsBucket
  
