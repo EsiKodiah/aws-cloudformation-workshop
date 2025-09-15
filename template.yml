@@ -6,7 +6,7 @@
       "Type": "AWS::S3::Bucket",
       "Properties": {
         "BucketName": {
-          "Fn::Sub": "room6-conformity-bucket-${AWS::AccountId}-${AWS::Region}"
+          "Fn::Sub": "room6-conformity-hard-${AWS::AccountId}-${AWS::Region}"
         },
         "OwnershipControls": {
           "Rules": [
