@@ -1,31 +1,35 @@
-AWSTemplateFormatVersion: 2010-09-09
-Description: Insecure CloudFormation template for testing security scanners
-
-Resources:
-  InsecureEC2:
-    Type: AWS::EC2::Instance
-    Properties:
-      ImageId: ami-0b09ffb6d8b58ca91
-      InstanceType: t2.micro
-      KeyName: my-insecure-key
-      SecurityGroups:
-        - !Ref InsecureSecurityGroup
-
-  InsecureSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow all inbound traffic
-      SecurityGroupIngress:
-        - IpProtocol: -1
-          FromPort: -1
-          ToPort: -1
-          CidrIp: 0.0.0.0/0
-
-  InsecureBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: insecure-bucket-example
-      AccessControl: PublicRead
- 
-
- 
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Test secure S3 bucket (ephemeral)",
+  "Resources": {
+    "TestBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "room6-conformity-bucket-${AWS::AccountId}-${AWS::Region}"
+        },
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "TestBucketName": {
+      "Value": {
+        "Ref": "TestBucket"
+      },
+      "Description": "The name of the ephemeral S3 bucket created for CodePipeline"
+    }
+  }
+}
