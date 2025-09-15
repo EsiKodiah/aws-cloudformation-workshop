@@ -1,0 +1,18 @@
+{
+  "failOnSeverity": "MEDIUM",
+  "scan": {
+    "enabled": true,
+    "outputFormat": "json"
+  },
+  "report": {
+    "includePassedChecks": true,
+    "includeSeveritySummary": true
+  },
+  "frameworks": {
+    "terraform": { "templateFilesPattern": "**/*(*.tf|*.tfvars)" },
+    "cloudformation": { "templateFilesPattern": "**/*(*.yml|*.yaml|*.json)" }
+  },
+  "settings": {
+    "failOnSeverity": "MEDIUM"
+  }
+}
